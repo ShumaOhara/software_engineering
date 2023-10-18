@@ -30,7 +30,7 @@ int insert(int value, struct Table *table){
             table[i].value = value;
             return 0;
         }
-        i = i + DELTA;
+        i = (i + DELTA) % BUCEKTSIZE;
     }
     return 1;
 }
@@ -42,7 +42,7 @@ int search(int value, struct Table *table){
             printf("%d is in No.%d\n", value, table[i].num);
             return 0;
         }
-        i = i + DELTA;
+        i = (i + DELTA) % BUCKETSIZE;
     }
     return 1;
 }
