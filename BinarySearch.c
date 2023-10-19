@@ -18,7 +18,6 @@ int binary_search(int K, int m, int n){
     return -1;
 }
 
-
 int main(){
     printf("%d", a[binary_search(50, 0, 18)]);
     return 0;
