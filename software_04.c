@@ -30,7 +30,7 @@ int insert(int value, struct Table *table){
             table[i].value = value;
             return 0;
         }
-        i = (i + DELTA) % BUCEKTSIZE;
+        i = (i + DELTA) % BUCKETSIZE;
     }
     return 1;
 }
@@ -50,7 +50,7 @@ int search(int value, struct Table *table){
 int main(){
     struct Table *table;
     int data[] = {15, 13, 14, 1, 7, 0, 9, 2, 3};
-    table = malloc(BUCKETSIZE * sizeof(struct Table));
+    table = (struct Table *)malloc(BUCKETSIZE * sizeof(struct Table));
     for(int i = 0; i < BUCKETSIZE; i++){
         init(i, table);
     }
