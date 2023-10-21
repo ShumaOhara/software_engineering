@@ -18,8 +18,8 @@ void countsort(int* data, int* result, int max){
         printf("%d ", villa[i]);
     }
     printf("\n");
-    for(int i = DATASIZE; i > 0; i--){
-        result[villa[data[i]]] = data[i];
+    for(int i = DATASIZE-1; i >= 0; i--){
+        result[villa[data[i]]-1] = data[i];
         villa[data[i]] -= 1;
     }
     return;
@@ -39,5 +39,9 @@ int main(){
         }
     }
     countsort(data, result, max);
+    for(int i = 0; i < DATASIZE; i++){
+        printf("%d ", result[i]);
+    }
+    printf("\n");
     return 0;
 }
