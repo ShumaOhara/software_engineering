@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define DATASIZE 50
+#define DATASIZE 1000000
 
 int partition(int **data, int head, int end){
     int key = (*data)[end];
