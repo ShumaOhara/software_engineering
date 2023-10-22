@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define DATASIZE 50
+#define DATASIZE 1000000
 
 void countsort(int* data, int* result, int max){
     int villa[max];
