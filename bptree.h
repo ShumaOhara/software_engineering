@@ -22,7 +22,7 @@ typedef struct _NODE {
 	struct _NODE *chi[N];
 	int key[N-1]; 
 	int nkey;
-	struct _NODE *parent;
+	struct _NODE *parent, *child;
 } NODE;
 
 typedef struct _TEMP {
