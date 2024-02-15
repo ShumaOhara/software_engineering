@@ -44,35 +44,6 @@ find_leaf(NODE *node, int key)
 }
 
 NODE *
-insert_in_leaf(NODE *leaf, int key, DATA *data)
-{
-	int i;
-	if (key < leaf->key[0]) {
-		for (i = leaf->nkey; i > 0; i--) {
-			leaf->chi[i] = leaf->chi[i-1] ;
-			leaf->key[i] = leaf->key[i-1] ;
-		} 
-		leaf->key[0] = key;
-		leaf->chi[0] = (NODE *)data;
-	}
-	else {
-		for (i = 0; i < leaf->nkey; i++) {
-			if (key < leaf->key[i]) break;
-		}
-		for (int j = leaf->nkey; j > i; j--) {		
-			leaf->chi[j] = leaf->chi[j-1] ;
-			leaf->key[j] = leaf->key[j-1] ;
-		} 
-	// quiz
-	leaf->key[i] = key;
-	leaf->chi[i] = (NODE *)data;
-	}
-	leaf->nkey++;
-
-	return leaf;
-}
-
-NODE *
 alloc_leaf(NODE *parent)
 {
 	NODE *node;
@@ -84,24 +55,254 @@ alloc_leaf(NODE *parent)
 	return node;
 }
 
+NODE *
+insert_in_leaf(NODE *leaf, int key, DATA *data)
+{
+	int i;
+	if (key < leaf->key[0]) {
+		for (i = leaf->nkey; i > 0; i--) {
+			leaf->chi[i+1] = leaf->chi[i] ;
+			leaf->key[i] = leaf->key[i-1] ;
+		}
+		leaf->key[0] = key;
+		leaf->chi[0] = (NODE *)data;
+	}
+	else {
+		for (i = 0; i < leaf->nkey; i++) {
+			if (key < leaf->key[i]) break;
+		}
+		for (int j = leaf->nkey; j > i; j--) {		
+			leaf->chi[j+1] = leaf->chi[j] ;
+			leaf->key[j] = leaf->key[j-1] ;
+		}
+		leaf->key[i] = key;
+		leaf->chi[i] = (NODE *)data;
+	}
+	leaf->nkey += 1;
+
+	return leaf;
+}
+
+void
+insert_in_parent(NODE *leaf, int key, NODE *new_leaf){
+    //Rootだったら新しく作る
+    NODE *parent;
+    if(Root == leaf){
+        parent = alloc_leaf(NULL);
+        parent->key[0] = key;
+        parent->chi[0] = leaf;
+        parent->chi[1] = new_leaf;
+        parent->nkey = 1;
+        parent->isLeaf = false;
+        leaf->parent = parent;
+        new_leaf->parent = parent;
+        Root = parent;
+        return;
+    }
+
+    //Rootじゃなかったらinsert_in_leaf関数と同じようなことする
+    parent = leaf->parent;
+    //まだ元のparentに枠が余ってた場合
+    if(parent->nkey < N-1){
+        int i;
+        printf("枠あまり : %d\n", parent->nkey);
+        if(key < parent->key[0]){
+            for(i = parent->nkey; i > 0; i--){
+                parent->chi[i+1] = parent->chi[i];
+                parent->key[i] = parent->key[i-1];
+            }
+            parent->key[0] = key;
+            parent->chi[0] = leaf;
+            parent->chi[1] = new_leaf;
+        }
+        else{
+            for(i = 0; i < parent->nkey; i++){
+                if(key < parent->key[i]) break;
+            }
+            for(int j = parent->nkey; j > i; j--){
+                parent->chi[j+1] = parent->chi[j];
+                parent->key[j] = parent->key[j-1];
+            }
+            parent->key[i] = key;
+            parent->chi[i+1] = new_leaf;
+        }
+        parent->nkey += 1;
+        return;
+    }
+    //もう枠がなかった場合
+    else{
+        TEMP temp;
+        int i;
+        for(i = 0; i < N-1; i++){
+            temp.key[i] = parent->key[i];
+            temp.chi[i] = parent->chi[i];
+        }
+        temp.chi[i+1] = parent->chi[i+1];
+        temp.nkey = parent->nkey;
+        temp.isLeaf = parent->isLeaf;
+        printf("枠あまりなし : temp.nkey : %d\n", temp.nkey);
+        
+        //keyをtempに入れる
+        if(key < temp.key[0]){
+            for(i = temp.nkey; i > 0; i--){
+                temp.chi[i+1] = temp.chi[i];
+                temp.key[i] = temp.key[i-1];
+            }
+            temp.key[0] = key;
+            temp.chi[0] = leaf;
+            temp.chi[1] = new_leaf;
+        }
+
+        else{
+            for(i = 0; i < temp.nkey; i++){
+                if(key < temp.key[i]) break;
+            }
+            for(int j = temp.nkey; j > i; j--){
+                temp.chi[j+1] = temp.chi[j];
+                temp.key[j] = temp.key[j-1];
+            }
+            temp.key[i] = key;
+            temp.chi[i] = leaf;
+            temp.chi[i+1] = new_leaf;
+        }
+        temp.nkey++;
+
+        for(i = 0; i < N; i++){
+            printf("temp.key[%d] = %d\n", i, temp.key[i]);
+            printf("temp.chi[%d] = %p\n", i, temp.chi[i]);
+            printf("temp.chi[%d]->key[0] = %d\n", i, temp.chi[i]->key[0]);
+        }
+        printf("temp.chi[%d] = %p\n", N, temp.chi[N]);
+        printf("temp.chi[%d]->key[0] = %d\n", N, temp.chi[N]->key[0]);
+        printf("leaf = %p\n", leaf);
+        printf("new_leaf = %p\n", new_leaf);
+
+        NODE *new_parent;
+        new_parent = alloc_leaf(NULL);
+        new_parent->isLeaf = false;
+
+        for(int i = 0; i < N-1; i++){
+            parent->key[i] = 0;
+            parent->chi[i] = NULL;
+        }
+        parent->chi[i+1] = NULL;
+        parent->nkey = 0;
+
+        //parent_parentにparentとnew_parentをいれる
+        for(int i = 0; i < N/2; i++){
+            insert_in_leaf(parent, temp.key[i], (DATA *)temp.chi[i]);
+        }
+        parent->chi[i+1] = temp.chi[i+1];
+        insert_in_leaf(new_parent, temp.key[N-1], (DATA *)temp.chi[N-1]);
+        printf("temp.key[N-1] = %d\n", temp.key[N-1]);
+        new_parent->chi[1] = temp.chi[N];
+        printf("new_parent->key[0] = %d\n", new_parent->key[0]);
+        
+        print_tree_core(parent);
+        print_tree_core(new_parent);
+        printf("\n");
+        for(i = 0; i < N; i++){
+            temp.chi[i] = NULL;
+            temp.key[i] = 0;
+        }
+        temp.chi[N] = NULL;
+        
+        NODE *key_leaf = new_parent->chi[0];
+        printf("key_leaf = %p\n", key_leaf);
+        while(true){
+            if(key_leaf->isLeaf == true) break;
+            key_leaf = key_leaf->chi[0];
+        }
+
+        printf("key_leaf->key[0] = %d\n", key_leaf->key[0]);
+        int parent_key = key_leaf->key[0];
+        insert_in_parent(parent, parent_key, new_parent);
+    }
+}
+
 void 
 insert(int key, DATA *data)
 {
-	NODE *leaf;
+	NODE *leaf, *new_leaf;
 
 	if (Root == NULL) {
 		leaf = alloc_leaf(NULL);
 		Root = leaf;
-	}
-  else {
-    leaf = find_leaf(Root, key);
-  }
-	if (leaf->nkey < (N-1)) {
+	}else {
+    	leaf = find_leaf(Root, key);
+  	}
+
+	if (leaf->nkey < N-1) {
 		insert_in_leaf(leaf, key, data);
 	}
-	else { // split
-		// くぁwせdrftgyふじこlp
-	}
+    else { // split
+        //TEMP型の構造体にリーフをコピー
+        printf("かく忍\n");
+        TEMP temp;
+        int i;
+        for(i = 0; i < N-1; i++){
+            temp.key[i] = leaf->key[i];
+            temp.chi[i] = leaf->chi[i];
+        }
+        temp.chi[i+1] = leaf->chi[i+1];
+        temp.nkey = leaf->nkey;
+        temp.isLeaf = leaf->isLeaf;
+
+        //あたらしいkeyをいれる
+        if(key < temp.key[0]){
+            for(i = temp.nkey; i > 0; i--){
+                temp.chi[i+1] = temp.chi[i];
+                temp.key[i] = temp.key[i-1];
+            }
+            temp.chi[1] = temp.chi[0];
+            temp.chi[0] = (NODE *)data;
+            temp.key[0] = key;
+        }
+
+        else{
+            for(i = 0; i < temp.nkey; i++){
+                if(key < temp.key[i]) break;
+            }
+            for(int j = temp.nkey; j > i; j--){
+                temp.chi[j+1] = temp.chi[j];
+                temp.key[j] = temp.key[j-1];
+            }
+            temp.key[i] = key;
+            temp.chi[i+1] = (NODE *)data;
+        }
+
+        temp.nkey++;
+
+        //2つにリーフを分ける
+        new_leaf = alloc_leaf(leaf->parent);
+
+        new_leaf->chi[N-1] = temp.chi[N-1];
+        leaf->chi[N-1] = new_leaf;
+        for(int i = 0; i < N-1; i++){
+            leaf->key[i] = 0;
+            leaf->chi[i] = NULL;
+        }
+        leaf->nkey = 0;
+        for(i = 0; i < N/2; i++){
+            insert_in_leaf(leaf, temp.key[i], (DATA *)temp.chi[i]);
+            insert_in_leaf(new_leaf, temp.key[i+N/2], (DATA *)temp.chi[i+N/2]);
+        }
+        temp.isLeaf = false;
+        temp.nkey = 0;
+        for(int i = 0; i < N; i++){
+            temp.chi[i] = NULL;
+            temp.key[i] = 0;
+        }
+        temp.chi[N] = NULL;
+        int parent_key = new_leaf->key[0];
+        print_tree_core(leaf);
+        print_tree_core(new_leaf);
+        printf("\n");
+        printf("leaf = %p\n", leaf);
+        printf("new_leaf = %p\n", new_leaf);
+        insert_in_parent(leaf, parent_key, new_leaf);
+        printf("insert_in_parent おわり\n");
+    }
 }
 
 void
